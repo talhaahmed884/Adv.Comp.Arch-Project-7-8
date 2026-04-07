@@ -82,7 +82,7 @@ public class CodeWriterImpl implements CodeWriter {
         writer.write("D=A\n");
         writer.write("@SP\n");
         writer.write("M=D\n");
-        this.writeCall("sys.init", 0);
+        this.writeCall("Sys.init", 0);
     }
 
     @Override
