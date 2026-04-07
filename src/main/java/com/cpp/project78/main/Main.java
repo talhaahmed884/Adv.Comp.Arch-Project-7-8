@@ -10,15 +10,14 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.InvalidParameterException;
-import java.util.stream.Stream;
 
 public class Main {
     private final CodeWriter codeWriter;
     private final String[] fileNames;
+    private String sourcePath;
 
     public Main(String name) throws IOException {
         File file = new File(name);
@@ -26,27 +25,27 @@ public class Main {
 
         if (file.isFile()) {
             targetFileName = FilenameUtils.getPath(name) + FilenameUtils.getBaseName(name) + ".asm";
-            fileNames = new String[]{name};
+            fileNames = new String[]{FilenameUtils.getName(name)};
+            sourcePath = FilenameUtils.getPath(name);
         } else if (file.isDirectory()) {
             Path path = Paths.get(name);
-            targetFileName = path.resolve(path.getName(path.getNameCount() - 1) + ".asm")
-                    .toAbsolutePath().toString();
+            targetFileName = path.resolve(path.getName(path.getNameCount() - 1) + ".asm").toString();
 
-            try (Stream<Path> stream = Files.list(path)) {
-                fileNames = stream.map(filePath -> filePath.toAbsolutePath().toString()).toArray(String[]::new);
-            } catch (Exception e) {
-                throw new InvalidParameterException("Unable to read path: " + name);
-            }
+            fileNames = file.list();
+            sourcePath = file.getPath();
         } else {
             throw new InvalidParameterException("Unable to read path: " + name);
         }
 
+        if (!sourcePath.endsWith("/")) {
+            sourcePath += "/";
+        }
         codeWriter = new CodeWriterImpl(targetFileName);
     }
 
     public void compile() throws IOException {
         for (String fileName : this.fileNames) {
-            Parser parser = new ParserImpl(fileName);
+            Parser parser = new ParserImpl(sourcePath + fileName);
             codeWriter.setFileName(fileName);
 
             while (parser.hasMoreCommands()) {

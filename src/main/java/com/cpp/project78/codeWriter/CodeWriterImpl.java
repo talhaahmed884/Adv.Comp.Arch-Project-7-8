@@ -34,7 +34,7 @@ public class CodeWriterImpl implements CodeWriter {
                 writer.write("D=M\n");
                 writer.write("A=A-1\n");
             }
-            case Command.neg, Command.not -> writer.write("A=A-1\n");
+            case Command.neg, Command.not -> writer.write("A=M-1\n");
         }
 
         switch (cmd) {
@@ -150,6 +150,7 @@ public class CodeWriterImpl implements CodeWriter {
                 writer.write("M=D\n");
             }
             case Segment.pointer -> {
+                this.writeSegmentPopToDReg();
                 if (index == 0) {
                     writer.write("@THIS\n");
                 } else if (index == 1) {
@@ -157,7 +158,6 @@ public class CodeWriterImpl implements CodeWriter {
                 } else {
                     throw new IllegalStateException("Unexpected value of Segment: " + seg + ", Value: " + index);
                 }
-                this.writeSegmentPopToDReg();
                 writer.write("M=D\n");
             }
             case Segment._static -> {
