@@ -38,13 +38,20 @@ public class ParserImpl implements Parser {
         }
 
         try {
-            Command command = Command.valueOf(splitCommand[0].toLowerCase());
+            Command command = Command.fromValue(splitCommand[0].toLowerCase());
 
             return switch (command) {
                 case Command.add, Command.sub, Command.neg, Command.eq, Command.gt, Command.lt, Command.and, Command.or,
                      Command.not -> CommandType.C_ARITHMETIC.toString();
                 case Command.push -> CommandType.C_PUSH.toString();
                 case Command.pop -> CommandType.C_POP.toString();
+                case Command.label -> CommandType.C_LABEL.toString();
+                case Command._goto -> CommandType.C_GOTO.toString();
+                case Command.if_goto -> CommandType.C_IF.toString();
+                case Command.function -> CommandType.C_FUNCTION.toString();
+                case Command.call -> CommandType.C_CALL.toString();
+                case Command._return -> CommandType.C_RETURN.toString();
+                default -> throw new IllegalStateException("Unexpected value: " + command);
             };
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid command", e);

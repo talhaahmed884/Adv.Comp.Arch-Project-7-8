@@ -44,6 +44,8 @@ public class Main {
     }
 
     public void compile() throws IOException {
+        codeWriter.writeInit();
+
         for (String fileName : this.fileNames) {
             Parser parser = new ParserImpl(sourcePath + fileName);
             codeWriter.setFileName(fileName);
@@ -57,6 +59,12 @@ public class Main {
                             codeWriter.writePushPop(Command.push.toString(), parser.arg1(), parser.arg2());
                     case CommandType.C_POP ->
                             codeWriter.writePushPop(Command.pop.toString(), parser.arg1(), parser.arg2());
+                    case CommandType.C_LABEL -> codeWriter.writeLabel(parser.arg1());
+                    case CommandType.C_GOTO -> codeWriter.writeGoto(parser.arg1());
+                    case CommandType.C_IF -> codeWriter.writeIf(parser.arg1());
+                    case CommandType.C_FUNCTION -> codeWriter.writeFunction(parser.arg1(), parser.arg2());
+                    case CommandType.C_RETURN -> codeWriter.writeReturn();
+                    case CommandType.C_CALL -> codeWriter.writeCall(parser.arg1(), parser.arg2());
                     default -> throw new IllegalStateException("Unexpected value: " + cmd);
                 }
 
