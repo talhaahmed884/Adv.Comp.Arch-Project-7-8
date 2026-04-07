@@ -194,7 +194,7 @@ public class CodeWriterImpl implements CodeWriter {
         writer.write(AssemblyCode.D_EQ_M_SUB_D.toString());
 
         writer.write("@" + comparisonLabelStart + "\n");
-        writer.write("D;" + command + "\n");
+        writer.write("D;" + command);
 
         writer.write(AssemblyCode.SP.toString());
         writer.write(AssemblyCode.A_EQ_M_SUB_1.toString());
