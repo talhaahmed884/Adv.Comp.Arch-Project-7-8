@@ -28,29 +28,29 @@ public class CodeWriterImpl implements CodeWriter {
 
     @Override
     public void writeArithmetic(String command) throws IOException {
-        writer.write("@SP\n");
+        writer.write(AssemblyCode.SP.toString());
 
         Command cmd = Command.fromValue(command.toLowerCase());
         switch (cmd) {
             case Command.add, Command.sub, Command.and, Command.or, Command.eq, Command.gt, Command.lt -> {
-                writer.write("M=M-1\n");
-                writer.write("A=M\n");
-                writer.write("D=M\n");
-                writer.write("A=A-1\n");
+                writer.write(AssemblyCode.M_EQ_M_SUB_1.toString());
+                writer.write(AssemblyCode.A_EQ_M.toString());
+                writer.write(AssemblyCode.D_EQ_M.toString());
+                writer.write(AssemblyCode.A_EQ_A_SUB_1.toString());
             }
-            case Command.neg, Command.not -> writer.write("A=M-1\n");
+            case Command.neg, Command.not -> writer.write(AssemblyCode.A_EQ_M_SUB_1.toString());
         }
 
         switch (cmd) {
-            case Command.add -> writer.write("M=D+M\n");
-            case Command.sub -> writer.write("M=M-D\n");
-            case Command.and -> writer.write("M=D&M\n");
-            case Command.or -> writer.write("M=D|M\n");
-            case Command.neg -> writer.write("M=-M\n");
-            case Command.not -> writer.write("M=!M\n");
-            case Command.eq -> this.writeComparisonOperators("JEQ");
-            case Command.gt -> this.writeComparisonOperators("JGT");
-            case Command.lt -> this.writeComparisonOperators("JLT");
+            case Command.add -> writer.write(AssemblyCode.M_EQ_D_ADD_M.toString());
+            case Command.sub -> writer.write(AssemblyCode.M_EQ_M_SUB_D.toString());
+            case Command.and -> writer.write(AssemblyCode.M_EQ_D_AND_M.toString());
+            case Command.or -> writer.write(AssemblyCode.M_EQ_D_OR_M.toString());
+            case Command.neg -> writer.write(AssemblyCode.M_EQ_NEG_M.toString());
+            case Command.not -> writer.write(AssemblyCode.M_EQ_NOT_M.toString());
+            case Command.eq -> this.writeComparisonOperators(AssemblyCode.EQ.toString());
+            case Command.gt -> this.writeComparisonOperators(AssemblyCode.GT.toString());
+            case Command.lt -> this.writeComparisonOperators(AssemblyCode.LT.toString());
             default -> throw new IllegalStateException("Unexpected value: " + cmd);
         }
     }
@@ -78,10 +78,10 @@ public class CodeWriterImpl implements CodeWriter {
 
     @Override
     public void writeInit() throws IOException {
-        writer.write("@256\n");
-        writer.write("D=A\n");
-        writer.write("@SP\n");
-        writer.write("M=D\n");
+        writer.write(AssemblyCode.CONST_256.toString());
+        writer.write(AssemblyCode.D_EQ_A.toString());
+        writer.write(AssemblyCode.SP.toString());
+        writer.write(AssemblyCode.M_EQ_D.toString());
         this.writeCall("Sys.init", 0);
     }
 
@@ -95,18 +95,18 @@ public class CodeWriterImpl implements CodeWriter {
     public void writeGoto(String label) throws IOException {
         String labelName = "@" + this.currentHackFunctionName + "$" + label + "\n";
         writer.write(labelName);
-        writer.write("0;JMP\n");
+        writer.write(AssemblyCode.JMP_IF_EQ_0.toString());
     }
 
     @Override
     public void writeIf(String label) throws IOException {
         String labelName = "@" + this.currentHackFunctionName + "$" + label + "\n";
-        writer.write("@SP\n");
-        writer.write("M=M-1\n");
-        writer.write("A=M\n");
-        writer.write("D=M\n");
+        writer.write(AssemblyCode.SP.toString());
+        writer.write(AssemblyCode.M_EQ_M_SUB_1.toString());
+        writer.write(AssemblyCode.A_EQ_M.toString());
+        writer.write(AssemblyCode.D_EQ_M.toString());
         writer.write(labelName);
-        writer.write("D;JNE\n");
+        writer.write(AssemblyCode.JNE_IF_NE_D.toString());
     }
 
     @Override
@@ -114,65 +114,65 @@ public class CodeWriterImpl implements CodeWriter {
         String label = functionName + "$ret." + this.currentHackFunctionCallCounter;
         writer.write("@" + label + "\n");
         this.currentHackFunctionCallCounter++;
-        writer.write("D=A\n");
+        writer.write(AssemblyCode.D_EQ_A.toString());
         this.writeSegmentPushToDReg();
 
         Segment[] seg = new Segment[]{Segment.local, Segment.argument, Segment._this, Segment.that};
         for (Segment s : seg) {
             writer.write("@" + s.getCode() + "\n");
-            writer.write("D=M\n");
+            writer.write(AssemblyCode.D_EQ_M.toString());
             this.writeSegmentPushToDReg();
         }
 
-        writer.write("@SP\n");
-        writer.write("D=M\n");
+        writer.write(AssemblyCode.SP.toString());
+        writer.write(AssemblyCode.D_EQ_M.toString());
         writer.write("@" + (5 + numArgs) + "\n");
-        writer.write("D=D-A\n");
+        writer.write(AssemblyCode.D_EQ_D_SUB_A.toString());
         writer.write("@" + Segment.argument.getCode() + "\n");
-        writer.write("M=D\n");
-        writer.write("@SP\n");
-        writer.write("D=M\n");
+        writer.write(AssemblyCode.M_EQ_D.toString());
+        writer.write(AssemblyCode.SP.toString());
+        writer.write(AssemblyCode.D_EQ_M.toString());
         writer.write("@" + Segment.local.getCode() + "\n");
-        writer.write("M=D\n");
+        writer.write(AssemblyCode.M_EQ_D.toString());
         writer.write("@" + functionName + "\n");
-        writer.write("0;JMP\n");
+        writer.write(AssemblyCode.JMP_IF_EQ_0.toString());
         writer.write("(" + label + ")\n");
     }
 
     @Override
     public void writeReturn() throws IOException {
         writer.write("@" + Segment.local.getCode() + "\n");
-        writer.write("D=M\n");
-        writer.write("@R13\n");
-        writer.write("M=D\n");
-        writer.write("@5\n");
-        writer.write("A=D-A\n");
-        writer.write("D=M\n");
-        writer.write("@R14\n");
-        writer.write("M=D\n");
+        writer.write(AssemblyCode.D_EQ_M.toString());
+        writer.write(AssemblyCode.R13.toString());
+        writer.write(AssemblyCode.M_EQ_D.toString());
+        writer.write(AssemblyCode.CONST_5.toString());
+        writer.write(AssemblyCode.A_EQ_D_SUB_A.toString());
+        writer.write(AssemblyCode.D_EQ_M.toString());
+        writer.write(AssemblyCode.R14.toString());
+        writer.write(AssemblyCode.M_EQ_D.toString());
         this.writeSegmentPopToDReg();
         writer.write("@" + Segment.argument.getCode() + "\n");
-        writer.write("A=M\n");
-        writer.write("M=D\n");
+        writer.write(AssemblyCode.A_EQ_M.toString());
+        writer.write(AssemblyCode.M_EQ_D.toString());
         writer.write("@" + Segment.argument.getCode() + "\n");
-        writer.write("D=M+1\n");
-        writer.write("@SP\n");
-        writer.write("M=D\n");
+        writer.write(AssemblyCode.D_EQ_M_ADD_1.toString());
+        writer.write(AssemblyCode.SP.toString());
+        writer.write(AssemblyCode.M_EQ_D.toString());
 
         Segment[] seg = new Segment[]{Segment.that, Segment._this, Segment.argument, Segment.local};
         for (int a = 0; a < seg.length; a++) {
-            writer.write("@R13\n");
-            writer.write("D=M\n");
+            writer.write(AssemblyCode.R13.toString());
+            writer.write(AssemblyCode.D_EQ_M.toString());
             writer.write("@" + (a + 1) + "\n");
-            writer.write("A=D-A\n");
-            writer.write("D=M\n");
+            writer.write(AssemblyCode.A_EQ_D_SUB_A.toString());
+            writer.write(AssemblyCode.D_EQ_M.toString());
             writer.write("@" + seg[a].getCode() + "\n");
-            writer.write("M=D\n");
+            writer.write(AssemblyCode.M_EQ_D.toString());
         }
 
-        writer.write("@R14\n");
-        writer.write("A=M\n");
-        writer.write("0;JMP\n");
+        writer.write(AssemblyCode.R14.toString());
+        writer.write(AssemblyCode.A_EQ_M.toString());
+        writer.write(AssemblyCode.JMP_IF_EQ_0.toString());
     }
 
     @Override
@@ -191,21 +191,21 @@ public class CodeWriterImpl implements CodeWriter {
         String comparisonLabelEnd = "COMPARISON_LABEL_END_" + comparisonLabelCounter;
         comparisonLabelCounter++;
 
-        writer.write("D=M-D\n");
+        writer.write(AssemblyCode.D_EQ_M_SUB_D.toString());
 
         writer.write("@" + comparisonLabelStart + "\n");
         writer.write("D;" + command + "\n");
 
-        writer.write("@SP\n");
-        writer.write("A=M-1\n");
-        writer.write("M=0\n");
+        writer.write(AssemblyCode.SP.toString());
+        writer.write(AssemblyCode.A_EQ_M_SUB_1.toString());
+        writer.write(AssemblyCode.M_EQ_0.toString());
         writer.write("@" + comparisonLabelEnd + "\n");
-        writer.write("0;JMP\n");
+        writer.write(AssemblyCode.JMP_IF_EQ_0.toString());
 
         writer.write("(" + comparisonLabelStart + ")\n");
-        writer.write("@SP\n");
-        writer.write("A=M-1\n");
-        writer.write("M=-1\n");
+        writer.write(AssemblyCode.SP.toString());
+        writer.write(AssemblyCode.A_EQ_M_SUB_1.toString());
+        writer.write(AssemblyCode.M_EQ_NEG_1.toString());
 
         writer.write("(" + comparisonLabelEnd + ")\n");
     }
@@ -216,25 +216,25 @@ public class CodeWriterImpl implements CodeWriter {
                     this.writeSegmentPush(seg.getCode(), index);
             case Segment.constant -> {
                 writer.write("@" + index + "\n");
-                writer.write("D=A\n");
+                writer.write(AssemblyCode.D_EQ_A.toString());
             }
             case Segment.temp -> {
                 writer.write("@" + (5 + index) + "\n");
-                writer.write("D=M\n");
+                writer.write(AssemblyCode.D_EQ_M.toString());
             }
             case Segment.pointer -> {
                 if (index == 0) {
-                    writer.write("@THIS\n");
+                    writer.write(AssemblyCode.THIS.toString());
                 } else if (index == 1) {
-                    writer.write("@THAT\n");
+                    writer.write(AssemblyCode.THAT.toString());
                 } else {
                     throw new IllegalStateException("Unexpected value of Segment: " + seg + ", Value: " + index);
                 }
-                writer.write("D=M\n");
+                writer.write(AssemblyCode.D_EQ_M.toString());
             }
             case Segment._static -> {
                 writer.write("@" + currentFileName + "." + index + "\n");
-                writer.write("D=M\n");
+                writer.write(AssemblyCode.D_EQ_M.toString());
             }
             default -> throw new IllegalStateException("Unexpected value: " + seg);
         }
@@ -244,10 +244,10 @@ public class CodeWriterImpl implements CodeWriter {
 
     private void writeSegmentPush(String segmentCode, int index) throws IOException {
         writer.write("@" + segmentCode + "\n");
-        writer.write("D=M\n");
+        writer.write(AssemblyCode.D_EQ_M.toString());
         writer.write("@" + index + "\n");
-        writer.write("A=D+A\n");
-        writer.write("D=M\n");
+        writer.write(AssemblyCode.A_EQ_D_ADD_A.toString());
+        writer.write(AssemblyCode.D_EQ_M.toString());
     }
 
     private void writePop(Segment seg, int index) throws IOException {
@@ -257,23 +257,23 @@ public class CodeWriterImpl implements CodeWriter {
             case Segment.temp -> {
                 this.writeSegmentPopToDReg();
                 writer.write("@" + (5 + index) + "\n");
-                writer.write("M=D\n");
+                writer.write(AssemblyCode.M_EQ_D.toString());
             }
             case Segment.pointer -> {
                 this.writeSegmentPopToDReg();
                 if (index == 0) {
-                    writer.write("@THIS\n");
+                    writer.write(AssemblyCode.THIS.toString());
                 } else if (index == 1) {
-                    writer.write("@THAT\n");
+                    writer.write(AssemblyCode.THAT.toString());
                 } else {
                     throw new IllegalStateException("Unexpected value of Segment: " + seg + ", Value: " + index);
                 }
-                writer.write("M=D\n");
+                writer.write(AssemblyCode.M_EQ_D.toString());
             }
             case Segment._static -> {
                 this.writeSegmentPopToDReg();
                 writer.write("@" + currentFileName + "." + index + "\n");
-                writer.write("M=D\n");
+                writer.write(AssemblyCode.M_EQ_D.toString());
             }
             default -> throw new IllegalStateException("Unexpected value: " + seg);
         }
@@ -281,29 +281,29 @@ public class CodeWriterImpl implements CodeWriter {
 
     private void writeSegmentPop(String segmentCode, int index) throws IOException {
         writer.write("@" + segmentCode + "\n");
-        writer.write("D=M\n");
+        writer.write(AssemblyCode.D_EQ_M.toString());
         writer.write("@" + index + "\n");
-        writer.write("D=D+A\n");
-        writer.write("@R13\n");
-        writer.write("M=D\n");
+        writer.write(AssemblyCode.D_EQ_D_ADD_A.toString());
+        writer.write(AssemblyCode.R13.toString());
+        writer.write(AssemblyCode.M_EQ_D.toString());
         this.writeSegmentPopToDReg();
-        writer.write("@R13\n");
-        writer.write("A=M\n");
-        writer.write("M=D\n");
+        writer.write(AssemblyCode.R13.toString());
+        writer.write(AssemblyCode.A_EQ_M.toString());
+        writer.write(AssemblyCode.M_EQ_D.toString());
     }
 
     private void writeSegmentPopToDReg() throws IOException {
-        writer.write("@SP\n");
-        writer.write("M=M-1\n");
-        writer.write("A=M\n");
-        writer.write("D=M\n");
+        writer.write(AssemblyCode.SP.toString());
+        writer.write(AssemblyCode.M_EQ_M_SUB_1.toString());
+        writer.write(AssemblyCode.A_EQ_M.toString());
+        writer.write(AssemblyCode.D_EQ_M.toString());
     }
 
     private void writeSegmentPushToDReg() throws IOException {
-        writer.write("@SP\n");
-        writer.write("A=M\n");
-        writer.write("M=D\n");
-        writer.write("@SP\n");
-        writer.write("M=M+1\n");
+        writer.write(AssemblyCode.SP.toString());
+        writer.write(AssemblyCode.A_EQ_M.toString());
+        writer.write(AssemblyCode.M_EQ_D.toString());
+        writer.write(AssemblyCode.SP.toString());
+        writer.write(AssemblyCode.M_EQ_M_ADD_1.toString());
     }
 }
