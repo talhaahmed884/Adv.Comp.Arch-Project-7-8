@@ -93,20 +93,20 @@ public class CodeWriterImpl implements CodeWriter {
 
     @Override
     public void writeGoto(String label) throws IOException {
-        String labelName = "@(" + this.currentHackFunctionName + "$" + label + ")\n";
+        String labelName = "@" + this.currentHackFunctionName + "$" + label + "\n";
         writer.write(labelName);
-        writer.write("0:JMP\n");
+        writer.write("0;JMP\n");
     }
 
     @Override
     public void writeIf(String label) throws IOException {
-        String labelName = "@(" + this.currentHackFunctionName + "$" + label + ")\n";
+        String labelName = "@" + this.currentHackFunctionName + "$" + label + "\n";
         writer.write("@SP\n");
         writer.write("M=M-1\n");
         writer.write("A=M\n");
         writer.write("D=M\n");
         writer.write(labelName);
-        writer.write("D:JNE\n");
+        writer.write("D;JNE\n");
     }
 
     @Override
@@ -115,13 +115,13 @@ public class CodeWriterImpl implements CodeWriter {
         writer.write("@" + label + "\n");
         this.currentHackFunctionCallCounter++;
         writer.write("D=A\n");
-        this.writeSegmentPopToDReg();
+        this.writeSegmentPushToDReg();
 
         Segment[] seg = new Segment[]{Segment.local, Segment.argument, Segment._this, Segment.that};
         for (Segment s : seg) {
             writer.write("@" + s.getCode() + "\n");
             writer.write("D=M\n");
-            this.writeSegmentPopToDReg();
+            this.writeSegmentPushToDReg();
         }
 
         writer.write("@SP\n");
@@ -187,27 +187,27 @@ public class CodeWriterImpl implements CodeWriter {
     }
 
     private void writeComparisonOperators(String command) throws IOException {
-        String comparisonLabelStart = "(COMPARISON_LABEL_START_" + comparisonLabelCounter + ")\n";
-        String comparisonLabelEnd = "(COMPARISON_LABEL_END_" + comparisonLabelCounter + ")\n";
+        String comparisonLabelStart = "COMPARISON_LABEL_START_" + comparisonLabelCounter;
+        String comparisonLabelEnd = "COMPARISON_LABEL_END_" + comparisonLabelCounter;
         comparisonLabelCounter++;
 
         writer.write("D=M-D\n");
 
-        writer.write("@" + comparisonLabelStart);
+        writer.write("@" + comparisonLabelStart + "\n");
         writer.write("D;" + command + "\n");
 
         writer.write("@SP\n");
         writer.write("A=M-1\n");
         writer.write("M=0\n");
-        writer.write("@" + comparisonLabelEnd);
+        writer.write("@" + comparisonLabelEnd + "\n");
         writer.write("0;JMP\n");
 
-        writer.write(comparisonLabelStart);
+        writer.write("(" + comparisonLabelStart + ")\n");
         writer.write("@SP\n");
         writer.write("A=M-1\n");
         writer.write("M=-1\n");
 
-        writer.write(comparisonLabelEnd);
+        writer.write("(" + comparisonLabelEnd + ")\n");
     }
 
     private void writePush(Segment seg, int index) throws IOException {
@@ -239,11 +239,7 @@ public class CodeWriterImpl implements CodeWriter {
             default -> throw new IllegalStateException("Unexpected value: " + seg);
         }
 
-        writer.write("@SP\n");
-        writer.write("A=M\n");
-        writer.write("M=D\n");
-        writer.write("@SP\n");
-        writer.write("M=M+1\n");
+        this.writeSegmentPushToDReg();
     }
 
     private void writeSegmentPush(String segmentCode, int index) throws IOException {
@@ -301,5 +297,13 @@ public class CodeWriterImpl implements CodeWriter {
         writer.write("M=M-1\n");
         writer.write("A=M\n");
         writer.write("D=M\n");
+    }
+
+    private void writeSegmentPushToDReg() throws IOException {
+        writer.write("@SP\n");
+        writer.write("A=M\n");
+        writer.write("M=D\n");
+        writer.write("@SP\n");
+        writer.write("M=M+1\n");
     }
 }
