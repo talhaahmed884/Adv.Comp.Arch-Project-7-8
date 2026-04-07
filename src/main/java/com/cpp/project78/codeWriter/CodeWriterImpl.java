@@ -30,7 +30,8 @@ public class CodeWriterImpl implements CodeWriter {
         Command cmd = Command.valueOf(command.toLowerCase());
         switch (cmd) {
             case Command.add, Command.sub, Command.and, Command.or, Command.eq, Command.gt, Command.lt -> {
-                writer.write("AM=M-1\n");
+                writer.write("M=M-1\n");
+                writer.write("A=M\n");
                 writer.write("D=M\n");
                 writer.write("A=A-1\n");
             }

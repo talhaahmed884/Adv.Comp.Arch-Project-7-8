@@ -6,7 +6,7 @@ import java.io.IOException;
 
 public class Driver {
     public static void main(String[] args) throws IOException {
-        Main main = new Main("src/main/resources/StaticTest.vm");
+        Main main = new Main("src/main/resources/StackTest.vm");
         main.compile();
     }
 }
